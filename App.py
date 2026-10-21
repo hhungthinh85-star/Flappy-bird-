@@ -5,27 +5,19 @@ import streamlit.components.v1 as components
 st.set_page_config(
     page_title="Flappy Bird Pixel",
     page_icon="🐤",
-    layout="wide",
-    initial_sidebar_state="collapsed",
+    layout="wide"
 )
 
 st.markdown("""
 <style>
-html, body, [data-testid="stAppViewContainer"] {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #55bec5;
-}
-[data-testid="stHeader"], [data-testid="stToolbar"],
-[data-testid="stDecoration"], footer, #MainMenu {
+[data-testid="stHeader"], footer, #MainMenu {
     display: none !important;
 }
 .block-container {
-    max-width: 100% !important;
+    max-width: 100%;
     padding: 0 !important;
-    margin: 0 !important;
 }
-iframe { display: block; border: 0; }
+iframe { border: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -34,468 +26,412 @@ game_html = r"""
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
 * { box-sizing: border-box; }
 html, body {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    overflow: hidden; background: #55bec5;
-    font-family: Arial, sans-serif;
+    margin: 0; padding: 0; overflow: hidden;
+    background: #63cbd8; font-family: Arial;
     touch-action: manipulation;
 }
-#wrap {
-    position: relative; width: 100%; height: 100vh;
-    min-height: 500px; overflow: hidden;
-    background: #55bec5;
-}
-canvas {
-    display: block; width: 100%; height: 100%;
-    image-rendering: pixelated;
-}
-#hint {
-    position: absolute; left: 0; right: 0; top: 18%;
-    text-align: center; color: white; font-weight: 900;
-    text-shadow: 2px 3px #47737a;
-    font-size: clamp(22px, 5vw, 38px);
-    pointer-events: none;
-}
-#sub {
-    font-size: clamp(13px, 3vw, 18px);
-    display: block; margin-top: 12px;
+#game {
+    width: 100%; height: 100vh; display: block;
 }
 #score {
-    position: absolute; top: 5%; left: 0; right: 0;
-    text-align: center; font-size: clamp(42px, 10vw, 68px);
-    color: white; text-shadow: 3px 3px #47737a;
+    position: absolute; top: 5%; width: 100%;
+    text-align: center; color: white;
+    font-size: 58px; font-weight: bold;
+    text-shadow: 3px 4px #394b59;
     pointer-events: none;
 }
-#best {
-    position: absolute; top: calc(5% + 65px);
-    left: 0; right: 0; text-align: center;
-    color: white; font-size: 14px;
-    text-shadow: 1px 2px #47737a;
+#hint {
+    position: absolute; top: 24%; width: 100%;
+    text-align: center; color: white;
+    font-size: 30px; font-weight: bold;
+    text-shadow: 2px 3px #394b59;
     pointer-events: none;
 }
+#sub { display: block; font-size: 15px; margin-top: 12px; }
 #sound {
-    position: absolute; top: 12px; right: 12px;
-    border: 2px solid #34464a; background: #ffffffcc;
-    border-radius: 10px; padding: 8px 10px;
-    font-size: 18px; cursor: pointer;
-}
-#overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center;
-    justify-content: center; pointer-events: none;
+    position: absolute; right: 12px; top: 12px;
+    padding: 9px; border-radius: 10px;
+    border: 2px solid #394b59; background: white;
 }
 #panel {
-    pointer-events: auto; display: none;
-    text-align: center; background: #fff3d8;
-    border: 4px solid #604453;
-    box-shadow: 0 7px 0 #604453;
-    padding: 22px 28px; max-width: 86%; color: #34464a;
+    display: none; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: #fff1c9; border: 4px solid #493747;
+    box-shadow: 0 7px #493747; border-radius: 8px;
+    padding: 24px; text-align: center; width: 85%;
 }
-#panel h2 { margin: 0 0 8px; font-size: 30px; }
-#panel p { margin: 8px 0 16px; }
-button.play {
-    border: 3px solid #604453; background: #7cc52d;
-    color: white; font-weight: 900; font-size: 19px;
-    padding: 10px 24px; box-shadow: 0 4px 0 #604453;
-    cursor: pointer;
-}
-button.play:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 #604453;
+#panel h2 { color: #394b59; }
+#again {
+    padding: 12px 24px; background: #7bc92d;
+    border: 3px solid #493747; color: white;
+    font-size: 18px; font-weight: bold;
+    border-radius: 6px;
 }
 </style>
 </head>
 <body>
-<div id="wrap">
-    <canvas id="game"></canvas>
-    <div id="score">0</div>
-    <div id="best"></div>
-
-    <div id="hint">
-        FLAPPY BIRD
-        <span id="sub">Chạm màn hình hoặc nhấn SPACE để bay</span>
-    </div>
-
-    <button id="sound">🔊</button>
-
-    <div id="overlay">
-        <div id="panel">
-            <h2>GAME OVER!</h2>
-            <p id="result">Điểm: 0</p>
-            <button class="play" id="again">Chơi lại ↻</button>
-        </div>
-    </div>
+<canvas id="game"></canvas>
+<div id="score">0</div>
+<div id="hint">
+    FLAPPY BIRD
+    <span id="sub">Chạm nhẹ để bay lên!<br>Tránh các ống cống!</span>
+</div>
+<button id="sound">🔊</button>
+<div id="panel">
+    <h2>GAME OVER!</h2>
+    <p id="result"></p>
+    <button id="again">CHƠI LẠI ↻</button>
 </div>
 
 <script>
 (() => {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-
 const scoreEl = document.getElementById("score");
-const bestEl = document.getElementById("best");
 const hint = document.getElementById("hint");
 const panel = document.getElementById("panel");
 const result = document.getElementById("result");
-const soundBtn = document.getElementById("sound");
 
-let W = 0, H = 0, dpr = 1;
-let bird, pipes = [], score = 0, best = 0;
-let state = "ready", frame = 0, last = 0;
-let sound = true, audioCtx = null;
+let W, H, bird, pipes, particles;
+let score = 0, best = 0, frame = 0;
+let state = "ready", last = 0;
+let sound = true, audio = null, groundH;
 
-let groundH = Math.max(70, window.innerHeight * 0.105);
-
-const rand = (a, b) => a + Math.random() * (b - a);
+const rand = (a,b) => a + Math.random() * (b-a);
 
 function resize() {
-    const r = canvas.getBoundingClientRect();
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = r.width;
-    H = r.height;
-    groundH = Math.max(70, H * 0.105);
-
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    if (!bird) reset();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = canvas.clientWidth || innerWidth;
+    H = innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    groundH = Math.max(65,H*.10);
+    reset();
 }
 
 function reset() {
-    bird = { x: W * 0.27, y: H * 0.42, vy: 0, rot: 0 };
+    bird = {x:W*.27,y:H*.42,vy:0,rot:0};
     pipes = [];
+    particles = [];
     score = 0;
     frame = 0;
     state = "ready";
-
     scoreEl.textContent = "0";
-    bestEl.textContent = best ? "Kỷ lục: " + best : "";
     hint.style.display = "block";
     panel.style.display = "none";
 }
 
-function beep(freq = 520, dur = 0.07) {
+function beep(freq=550) {
     if (!sound) return;
-
     try {
-        audioCtx = audioCtx ||
-            new (window.AudioContext || window.webkitAudioContext)();
-
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-
-        o.connect(g);
-        g.connect(audioCtx.destination);
-
+        audio = audio || new AudioContext();
+        const o = audio.createOscillator();
+        const g = audio.createGain();
+        o.connect(g); g.connect(audio.destination);
         o.frequency.value = freq;
-        o.type = "square";
-        g.gain.value = 0.035;
-
+        o.type = "triangle";
+        g.gain.value = .035;
         o.start();
-        g.gain.exponentialRampToValueAtTime(
-            0.001, audioCtx.currentTime + dur
-        );
-        o.stop(audioCtx.currentTime + dur);
-    } catch (e) {}
+        g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.09);
+        o.stop(audio.currentTime+.09);
+    } catch(e) {}
 }
 
 function flap() {
     if (state === "over") {
         reset();
         state = "playing";
-        hint.style.display = "none";
-        bird.vy = -H * 0.43;
-        beep(650);
-        return;
     }
-
-    if (state === "ready") {
-        state = "playing";
-        hint.style.display = "none";
-    }
+    if (state === "ready") state = "playing";
 
     if (state === "playing") {
-        bird.vy = -H * 0.43;
+        // Chạm nhẹ: lực bay thấp hơn để dễ kiểm soát
+        bird.vy = -H * 0.25;
+        hint.style.display = "none";
         beep(650);
-    }
-}
 
-function gameOver() {
-    if (state !== "playing") return;
-
-    state = "over";
-    beep(130, 0.18);
-    best = Math.max(best, score);
-
-    bestEl.textContent = "Kỷ lục: " + best;
-    result.textContent =
-        "Điểm: " + score + " • Kỷ lục: " + best;
-
-    panel.style.display = "block";
-}
-
-function rect(x, y, w, h, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
-}
-
-function drawCloud(x, y, s) {
-    ctx.fillStyle = "#e9ffd9";
-    ctx.fillRect(x, y, s * 2.2, s * 0.55);
-    ctx.fillRect(x + s * 0.25, y - s * 0.35, s * 0.7, s * 0.9);
-    ctx.fillRect(x + s * 0.85, y - s * 0.7, s * 0.85, s * 1.25);
-    ctx.fillRect(x + s * 1.45, y - s * 0.25, s * 0.55, s * 0.8);
-
-    ctx.fillStyle = "#d4f5cf";
-    ctx.fillRect(x, y + s * 0.42, s * 2.2, s * 0.13);
-}
-
-function drawCity() {
-    const base = H - groundH - H * 0.16;
-    ctx.fillStyle = "#a9dfd9";
-
-    for (let i = 0; i < 9; i++) {
-        const bw = W * 0.075;
-        const x = (
-            (i * W * 0.17 - frame * 0.22) % (W * 0.17)
-            + W * 2
-        ) % (W + W * 0.1) - bw;
-
-        const bh = H * (0.07 + ((i * 7) % 5) * 0.012);
-
-        ctx.fillRect(x, base - bh, bw, bh);
-
-        for (let yy = base - bh + bh * 0.3; yy < base - 5; yy += 13) {
-            for (let xx = x + 5; xx < x + bw - 3; xx += 12) {
-                ctx.fillRect(xx, yy, 4, 6);
-            }
+        for (let i=0;i<5;i++) {
+            particles.push({
+                x:bird.x-8, y:bird.y,
+                vx:rand(-2,-.5), vy:rand(-2,2),
+                life:1, size:rand(2,5), color:"#fff1a6"
+            });
         }
     }
 }
 
-function drawPipe(p) {
-    const x = p.x, w = p.w;
-    const topH = p.top;
-    const bottomY = topH + p.gap;
-    const bottomH = H - groundH - bottomY;
+function over() {
+    if (state !== "playing") return;
+    state = "over";
+    best = Math.max(best,score);
+    result.textContent = "Điểm: "+score+" | Kỷ lục: "+best;
+    panel.style.display = "block";
+    beep(150);
+}
 
-    const outline = "#493b4d";
-    const dark = "#579d25";
-    const green = "#76c42d";
-    const light = "#b0f45b";
+function rect(x,y,w,h,c) {
+    ctx.fillStyle = c;
+    ctx.fillRect(x,y,w,h);
+}
 
-    // Ống phía trên
-    rect(x - 3, -4, w + 6, topH + 3, outline);
-    rect(x, 0, w, topH, dark);
-    rect(x + 5, 0, w - 10, topH, green);
-    rect(x + 10, 0, 5, topH, light);
-    rect(x + w - 14, 0, 5, topH, "#5ca52a");
+function background() {
+    const sky = ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,"#50bfd6");
+    sky.addColorStop(.6,"#9be8dc");
+    sky.addColorStop(1,"#e2f7bf");
+    rect(0,0,W,H,sky);
 
-    rect(x - 7, topH - 13, w + 14, 17, outline);
-    rect(x - 3, topH - 10, w + 6, 11, green);
-    rect(x + 5, topH - 10, 5, 11, light);
+    // Mặt trời
+    ctx.fillStyle = "#fff1a4";
+    ctx.beginPath();
+    ctx.arc(W*.82,H*.17,Math.min(W,H)*.055,0,Math.PI*2);
+    ctx.fill();
 
-    // Ống phía dưới
-    rect(x - 3, bottomY, w + 6, bottomH + 5, outline);
-    rect(x, bottomY, w, bottomH, dark);
-    rect(x + 5, bottomY, w - 10, bottomH, green);
-    rect(x + 10, bottomY, 5, bottomH, light);
-    rect(x + w - 14, bottomY, 5, bottomH, dark);
+    // Mây pixel
+    for (let i=0;i<6;i++) {
+        const s=W*.10;
+        const x=((i*W*.27-frame*.15)%(W+s*3)+W+s*3)%(W+s*3)-s;
+        const y=H*(.16+(i%4)*.11);
+        ctx.fillStyle="rgba(255,255,255,.7)";
+        ctx.fillRect(x,y,s*2,s*.4);
+        ctx.fillRect(x+s*.25,y-s*.3,s*.6,s*.7);
+        ctx.fillRect(x+s*.8,y-s*.55,s*.8,s);
+    }
 
-    rect(x - 7, bottomY - 3, w + 14, 17, outline);
-    rect(x - 3, bottomY, w + 6, 11, green);
-    rect(x + 5, bottomY, 5, 11, light);
+    // Đồi xa
+    ctx.fillStyle="#b8edb0";
+    ctx.beginPath();
+    ctx.moveTo(0,H*.7);
+    for(let x=0;x<=W;x+=8)
+        ctx.lineTo(x,H*.66+Math.sin(x/W*9+frame*.003)*H*.025);
+    ctx.lineTo(W,H); ctx.lineTo(0,H);
+    ctx.fill();
+
+    // Thành phố
+    const base=H-groundH-H*.12;
+    for(let i=0;i<12;i++) {
+        const bw=W*.065;
+        const bh=H*(.06+(i%5)*.012);
+        const x=((i*W*.13-frame*.2)%(W+30)+W+30)%(W+30)-15;
+        rect(x,base-bh,bw,bh,"#88cec7");
+        for(let y=base-bh+8;y<base-4;y+=12)
+            for(let xx=x+6;xx<x+bw-3;xx+=11)
+                rect(xx,y,4,5,"#c3f1d8");
+    }
+}
+
+function pipe(p) {
+    const x=p.x,w=p.w,t=p.top,b=t+p.gap;
+    const bottomH=H-groundH-b;
+    const edge="#493747",green="#72c42d";
+    const light="#b6f85d",dark="#438e26";
+
+    // Ống trên
+    rect(x-4,-3,w+8,t+4,edge);
+    rect(x,0,w,t,dark);
+    rect(x+4,0,w-8,t,green);
+    rect(x+10,0,5,t,light);
+    rect(x+w-13,0,5,t,dark);
+
+    // Miệng ống trên
+    rect(x-8,t-14,w+16,22,edge);
+    rect(x-4,t-10,w+8,14,dark);
+    rect(x-2,t-8,w+4,9,green);
+    rect(x+5,t-8,5,9,light);
+
+    // Ống dưới
+    rect(x-4,b,w+8,bottomH+5,edge);
+    rect(x,b,w,bottomH,dark);
+    rect(x+4,b,w-8,bottomH,green);
+    rect(x+10,b,5,bottomH,light);
+    rect(x+w-13,b,5,bottomH,dark);
+
+    // Miệng ống dưới
+    rect(x-8,b-5,w+16,22,edge);
+    rect(x-4,b,w+8,14,dark);
+    rect(x-2,b,w+4,9,green);
+    rect(x+5,b,5,9,light);
 }
 
 function drawBird() {
     ctx.save();
-    ctx.translate(bird.x, bird.y);
+    ctx.translate(bird.x,bird.y);
     ctx.rotate(bird.rot);
 
-    const s = Math.max(3, Math.min(W, H) * 0.0065);
+    const s=Math.max(3,Math.min(W,H)*.0065);
+    const px=(x,y,w,h,c)=>{
+        ctx.fillStyle=c;
+        ctx.fillRect(x*s,y*s,w*s,h*s);
+    };
 
-    function px(x, y, w, h, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * s, y * s, w * s, h * s);
-    }
+    // Quầng sáng
+    ctx.fillStyle="rgba(255,240,160,.25)";
+    ctx.beginPath();
+    ctx.arc(0,0,14*s,0,Math.PI*2);
+    ctx.fill();
 
-    // Chim pixel màu vàng cam
-    px(-7, -4, 7, 7, "#493b4d");
-    px(-6, -3, 6, 6, "#fff3d7");
-    px(-3, -7, 8, 4, "#493b4d");
-    px(-2, -6, 7, 3, "#ffcf56");
-    px(-1, -3, 10, 8, "#493b4d");
-    px(0, -2, 8, 7, "#f5ad35");
-    px(3, -6, 4, 5, "#fff3d7");
-    px(4, -5, 3, 3, "#ffffff");
-    px(5, -4, 2, 2, "#493b4d");
-    px(6, 0, 5, 3, "#493b4d");
-    px(7, 1, 4, 1, "#f46d35");
-    px(-5, 2, 6, 5, "#493b4d");
-    px(-4, 3, 5, 3, "#e98128");
-    px(-1, 5, 2, 6, "#493b4d");
-    px(0, 5, 2, 5, "#f04420");
-    px(2, 5, 2, 7, "#493b4d");
-    px(3, 5, 2, 6, "#f04420");
-    px(-2, 0, 4, 3, "#fff3d7");
-    px(-1, 1, 2, 1, "#493b4d");
+    // Đuôi và cánh chuyển động
+    px(-10,-1,4,3,"#493747");
+    px(-9,0,3,2,"#f47c26");
+    const wing=Math.sin(frame*.5)*2;
+    px(-4,1+wing,7,5,"#493747");
+    px(-3,2+wing,5,3,"#e98324");
+
+    // Thân chim
+    px(-7,-4,7,7,"#493747");
+    px(-6,-3,6,6,"#fff3d7");
+    px(-3,-7,8,4,"#493747");
+    px(-2,-6,7,3,"#ffcf56");
+    px(-1,-3,10,8,"#493747");
+    px(0,-2,8,7,"#f5ad35");
+
+    // Mắt và mỏ
+    px(3,-6,4,5,"#493747");
+    px(4,-5,3,3,"#ffffff");
+    px(5,-4,2,2,"#493747");
+    px(6,0,5,3,"#493747");
+    px(7,1,4,1,"#f46d35");
+
+    // Chân
+    px(-1,5,2,6,"#493747");
+    px(0,5,2,5,"#f04420");
+    px(2,5,2,7,"#493747");
+    px(3,5,2,6,"#f04420");
 
     ctx.restore();
 }
 
-function drawGround() {
-    const y = H - groundH;
+function ground() {
+    const y=H-groundH;
+    rect(0,y,W,groundH,"#ded79a");
+    rect(0,y-10,W,10,"#493747");
+    rect(0,y-6,W,4,"#c3f76b");
+    rect(0,y,W,groundH*.42,"#a4ed50");
 
-    rect(0, y, W, groundH, "#dfd99a");
-    rect(0, y - 10, W, 10, "#493b4d");
-    rect(0, y - 6, W, 5, "#b6f05b");
-    rect(0, y, W, groundH * 0.45, "#a1e94f");
-
-    for (let x = -40; x < W + 60; x += 80) {
-        ctx.fillStyle = "#70bd2c";
+    for(let x=-40;x<W+50;x+=80) {
+        ctx.fillStyle="#72bf2c";
         ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + 40, y);
-        ctx.lineTo(x, y + groundH * 0.42);
-        ctx.lineTo(x - 40, y + groundH * 0.42);
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+40,y);
+        ctx.lineTo(x,y+groundH*.42);
+        ctx.lineTo(x-40,y+groundH*.42);
         ctx.closePath();
         ctx.fill();
     }
-
-    rect(0, y + groundH * 0.45, W, 5, "#d2b55f");
+    rect(0,y+groundH*.42,W,5,"#c9a952");
 }
 
 function update(dt) {
-    frame += dt * 60;
+    frame+=dt*60;
 
-    if (state !== "playing") return;
+    particles.forEach(p=>{
+        p.x+=p.vx*dt*60;
+        p.y+=p.vy*dt*60;
+        p.vy+=.04*dt*60;
+        p.life-=dt*1.5;
+    });
+    particles=particles.filter(p=>p.life>0);
 
-    bird.vy += H * 0.00165 * dt * 60;
-    bird.y += bird.vy * dt * 60;
-    bird.rot = Math.min(
-        0.9, Math.max(-0.55, bird.vy / (H * 0.025))
-    );
+    if(state!=="playing") return;
 
-    if (!pipes.length || pipes[pipes.length - 1].x < W * 0.58) {
-        const gap = Math.max(H * 0.19, Math.min(H * 0.24, 180));
+    // Trọng lực nhẹ, giới hạn tốc độ rơi
+    bird.vy=Math.min(H*.010,bird.vy+H*.00065*dt*60);
+    bird.y+=bird.vy*dt*60;
+    bird.rot=Math.max(-.4,Math.min(.7,bird.vy/(H*.035)));
 
+    if(!pipes.length||pipes[pipes.length-1].x<W*.62) {
+        const gap=Math.max(H*.25,Math.min(H*.29,230));
+        const margin=H*.13;
+        const maxTop=Math.max(margin+10,H-groundH-gap-margin);
         pipes.push({
-            x: W + 10,
-            w: W * 0.145,
-            gap: gap,
-            top: rand(H * 0.12, H * 0.52),
-            passed: false
+            x:W+10,w:Math.max(48,W*.14),
+            gap:gap,top:rand(margin,maxTop),passed:false
         });
     }
 
-    const speed = W * 0.0048;
-    pipes.forEach(p => p.x -= speed * dt * 60);
-    pipes = pipes.filter(p => p.x + p.w > -20);
+    const speed=Math.max(1.8,W*.0028);
+    pipes.forEach(p=>p.x-=speed*dt*60);
+    pipes=pipes.filter(p=>p.x+p.w>-20);
 
-    const groundY = H - groundH;
-    const br = H * 0.018;
+    const r=Math.max(8,H*.014);
+    if(bird.y+r>H-groundH||bird.y-r<0) over();
 
-    if (bird.y + br > groundY || bird.y - br < 0) {
-        gameOver();
-    }
+    for(const p of pipes) {
+        const bottom=p.top+p.gap;
+        if(bird.x+r>p.x&&bird.x-r<p.x+p.w&&
+          (bird.y-r<p.top||bird.y+r>bottom)) over();
 
-    for (const p of pipes) {
-        const gapBottom = p.top + p.gap;
-
-        if (
-            bird.x + br > p.x &&
-            bird.x - br < p.x + p.w &&
-            (bird.y - br < p.top || bird.y + br > gapBottom)
-        ) {
-            gameOver();
-        }
-
-        if (!p.passed && p.x + p.w < bird.x) {
-            p.passed = true;
+        if(!p.passed&&p.x+p.w<bird.x) {
+            p.passed=true;
             score++;
-            scoreEl.textContent = score;
-            beep(820, 0.06);
+            scoreEl.textContent=score;
+            beep(850);
+            for(let i=0;i<10;i++) particles.push({
+                x:bird.x,y:bird.y,vx:rand(-2,2),
+                vy:rand(-3,1),life:1,size:rand(2,4),
+                color:"#fff18c"
+            });
         }
     }
 }
 
 function draw() {
-    rect(0, 0, W, H, "#55bec5");
+    background();
+    pipes.forEach(pipe);
+    ground();
 
-    for (let i = 0; i < 5; i++) {
-        const x = (
-            (i * W * 0.29 - frame * 0.35) % (W + W * 0.3)
-            + W + W * 0.3
-        ) % (W + W * 0.3) - W * 0.1;
+    particles.forEach(p=>{
+        ctx.globalAlpha=Math.max(0,p.life);
+        rect(p.x,p.y,p.size||3,p.size||3,p.color);
+    });
+    ctx.globalAlpha=1;
 
-        drawCloud(x, H * 0.53 + (i % 2) * H * 0.025, W * 0.12);
-    }
-
-    drawCity();
-
-    rect(0, H - groundH - H * 0.16, W, H * 0.16, "#58d96d");
-
-    for (let i = 0; i < 40; i++) {
-        const x = (
-            (i * 97 - frame * 0.7) % (W + 30) + W + 30
-        ) % (W + 30) - 15;
-
-        const y = H - groundH - H * 0.16 + ((i * 19) % 60);
-        rect(x, y, 14, 7, i % 2 ? "#4fcf68" : "#66df73");
-    }
-
-    pipes.forEach(drawPipe);
-    drawGround();
-
-    if (bird) {
-        if (state === "ready") {
-            bird.y = H * 0.42 + Math.sin(frame * 0.06) * H * 0.008;
-        }
+    if(bird) {
+        if(state==="ready")
+            bird.y=H*.42+Math.sin(frame*.06)*H*.008;
         drawBird();
     }
 }
 
 function loop(t) {
-    const dt = Math.min(0.035, (t - (last || t)) / 1000);
-    last = t;
+    const dt=Math.min(.035,(t-(last||t))/1000);
+    last=t;
     update(dt);
     draw();
     requestAnimationFrame(loop);
 }
 
-canvas.addEventListener("pointerdown", e => {
+canvas.addEventListener("pointerdown",e=>{
     e.preventDefault();
     flap();
 });
 
-window.addEventListener("keydown", e => {
-    if (e.code === "Space" || e.code === "ArrowUp") {
+window.addEventListener("keydown",e=>{
+    if(e.code==="Space"||e.code==="ArrowUp") {
         e.preventDefault();
         flap();
     }
 });
 
-document.getElementById("again").addEventListener("click", e => {
+document.getElementById("again").addEventListener("click",e=>{
     e.stopPropagation();
     reset();
 });
 
-soundBtn.addEventListener("click", e => {
+document.getElementById("sound").addEventListener("click",e=>{
     e.stopPropagation();
-    sound = !sound;
-    soundBtn.textContent = sound ? "🔊" : "🔇";
-    if (sound) beep();
+    sound=!sound;
+    e.target.textContent=sound?"🔊":"🔇";
+    if(sound) beep();
 });
 
-window.addEventListener("resize", resize);
-
+window.addEventListener("resize",resize);
 resize();
-reset();
 requestAnimationFrame(loop);
 })();
 </script>
@@ -504,3 +440,4 @@ requestAnimationFrame(loop);
 """
 
 components.html(game_html, height=780, scrolling=False)
+    
